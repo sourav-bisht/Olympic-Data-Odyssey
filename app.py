@@ -1,20 +1,26 @@
 import streamlit as st
 import pandas as pd
-import preprocessor
-import helper
 import numpy as np
-import scipy
 import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
-import plotly.figure_factory as ff
 import plotly.graph_objects as go
 from scipy.stats import gaussian_kde
+import helper
+import preprocessor
 
-df = pd.read_csv('athlete_events.csv')
-region_df = pd.read_csv('noc_regions.csv')
 
-df = preprocessor.preprocess(df, region_df)
+# Caching the data loading process
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv('athlete_events.csv')
+    region_df = pd.read_csv('noc_regions.csv')
+    df = preprocessor.preprocess(df, region_df)
+    return df
+
+
+df = load_data()
 
 st.sidebar.title("Olympics Analysis")
 user_menu = st.sidebar.radio(
@@ -33,21 +39,21 @@ if user_menu == 'Medal Tally':
     if selected_country == 'Overall' and selected_year == 'Overall':
         st.title("Overall Tally")
     if selected_year != 'Overall' and selected_country == 'Overall':
-        st.title("Medal Tally in "+str(selected_year) + " Olympics")
+        st.title("Medal Tally in " + str(selected_year) + " Olympics")
     if selected_year == 'Overall' and selected_country != 'Overall':
-        st.title(selected_country+" Overall Performance")
+        st.title(selected_country + " Overall Performance")
     if selected_year != 'Overall' and selected_country != 'Overall':
-        st.title("Performance of "+selected_country+" in Year "+str(selected_year))
+        st.title("Performance of " + selected_country + " in Year " + str(selected_year))
 
     st.table(medal_tally)
 
 if user_menu == 'Overall Analysis':
-    editions = df['Year'].unique().shape[0]-1
-    cities = df['City'].unique().shape[0]
-    sports = df['Sport'].unique().shape[0]
-    events = df['Event'].unique().shape[0]
-    athletes = df['Name'].unique().shape[0]
-    nations = df['region'].unique().shape[0]
+    editions = df['Year'].nunique() - 1
+    cities = df['City'].nunique()
+    sports = df['Sport'].nunique()
+    events = df['Event'].nunique()
+    athletes = df['Name'].nunique()
+    nations = df['region'].nunique()
 
     st.title("Top Statistics")
     col1, col2, col3 = st.columns(3)
@@ -105,7 +111,6 @@ if user_menu == 'Overall Analysis':
     st.table(x)
 
 if user_menu == 'Country-Wise Analysis':
-
     st.sidebar.title('Country-Wise Analysis')
     country_list = df['region'].dropna().unique().tolist()
     country_list.sort()
@@ -114,16 +119,23 @@ if user_menu == 'Country-Wise Analysis':
 
     country_df = helper.year_wise_medal_tally(df, selected_country)
     fig = px.line(country_df, x="Year", y="Medal")
-    st.title(selected_country+" Medal Tally over the years")
+    st.title(selected_country + " Medal Tally over the years")
     st.plotly_chart(fig)
 
     st.title(selected_country + " Excels in the following sports")
     pt = helper.country_event_heatmap(df, selected_country)
-    fig, ax = plt.subplots(figsize=(25, 25))
-    ax = sns.heatmap(pt, annot=True)
-    st.pyplot(fig)
+    if pt.empty:
+        st.warning("No data available of "+selected_country+" for the heatmap.")
+    else:
+        pt = pt.fillna(0)
+        try:
+            fig, ax = plt.subplots(figsize=(25, 25))
+            ax = sns.heatmap(pt, annot=True)
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"An error occurred while plotting the heatmap: {e}")
 
-    st.title("Top 10 athletes of "+selected_country)
+    st.title("Top 10 athletes of " + selected_country)
     top10_df = helper.most_successful_country_wise(df, selected_country)
     st.table(top10_df)
 
