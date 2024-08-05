@@ -223,3 +223,29 @@ if user_menu == 'Athlete-Wise Analysis':
     fig = px.line(final, x='Year', y=['Male', 'Female'])
     fig.update_layout(autosize=False, width=1000, height=700)
     st.plotly_chart(fig)
+
+
+st.sidebar.markdown("---")  
+st.sidebar.markdown(
+    """
+    <style>
+    .sidebar .sidebar-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+    }
+    .sidebar .footer {
+        font-size: 14px;
+        color: grey;
+        text-align: center;
+        padding-top: 10px;
+    }
+    </style>
+    <div class="footer">
+        Made by :- Sourav Bisht
+        <br>
+        Graphic Era Hill University, Dehradun
+    </div>
+    """, unsafe_allow_html=True
+)
